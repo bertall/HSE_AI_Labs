@@ -39,14 +39,27 @@ void ASimpleAIController::Tick(float DeltaSeconds)
     auto HouseLocations = GetHouseLocations();
 
     int closestOrder = 0;
-    float closestDistance = GetDistanceToDestination(HouseLocations[Orders[0].HouseNumber]);
+    float closestDistance = GetDistanceToDestination(HouseLocations[Orders[0].HouseNumber]) + GetHouseTimeLeft(Orders[0].HouseNumber) * 50;
     for (int i = 0; i < Orders.Num(); ++i) {
-        float currentDistance = GetDistanceToDestination(HouseLocations[Orders[i].HouseNumber]);
+        float currentDistance = GetDistanceToDestination(HouseLocations[Orders[i].HouseNumber]) + GetHouseTimeLeft(Orders[i].HouseNumber) * 50;
+		
         if (currentDistance < closestDistance) {
             closestDistance = currentDistance;
             closestOrder = i;
         }
+		
     }
+	//float minTime = 20;
+	//float closestDistance = GetDistanceToDestination(HouseLocations[Orders[0].HouseNumber]) + GetHouseTimeLeft(Orders[0].HouseNumber) * 50;
+	//for (int i = 0; i < Orders.Num(); ++i) {
+	//	float Time = GetHouseTimeLeft(Orders[i].HouseNumber);
+	//	if ((Time < minTime) && (Time > 12)) {
+	//		minTime = Time;
+	//		float currentDistance = GetDistanceToDestination(HouseLocations[Orders[i].HouseNumber]) + GetHouseTimeLeft(Orders[i].HouseNumber) * 50;
+	//		closestDistance = currentDistance;
+	//		closestOrder = i;
+	//	}
+	//}
     auto Order = Orders[closestOrder];
 
     int PizzaAmount = GetPizzaAmount();
