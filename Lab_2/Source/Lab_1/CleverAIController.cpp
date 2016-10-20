@@ -11,12 +11,16 @@ ACleverAIController::ACleverAIController()
 
 float ACleverAIController::ComputeHouseScore(float Distance, float TimeLeft) const
 {
-    return - fmax(Distance - 150.f, 1.f) * (TimeLeft * TimeLeft);
+    return -(Distance + 55 * TimeLeft);
 }
 
 void ACleverAIController::Tick(float DeltaSeconds)
 {
+	auto HouseLocations = GetHouseLocations();
+	auto Orders = GetPizzaOrders();
+	
     if (bDeliveringOrder) {
+	
         float Distance = GetDistanceToDestination(CurrentDestination);
         if (Distance < 300.f) {
             UE_LOG(LogTemp, Warning, TEXT("Trying to deliver order %d, current distance: %1.3f"), CurrentOrderNumber, Distance);
@@ -27,9 +31,10 @@ void ACleverAIController::Tick(float DeltaSeconds)
                 CurrentOrderNumber = -1;
             }
         }
+		
     }
 
-    auto Orders = GetPizzaOrders();
+    
     if (Orders.Num() == 0) {
         // No orders to serve.
         // TODO: Go to center of the map.
@@ -46,7 +51,7 @@ void ACleverAIController::Tick(float DeltaSeconds)
     }
 
     // Take first order.
-    auto HouseLocations = GetHouseLocations();
+    
 
     TSet<int> ServedOrders;
     for (int id = 0; id < GetControllerCount(); ++id) {
@@ -64,20 +69,34 @@ void ACleverAIController::Tick(float DeltaSeconds)
 
     int BestOrder = -1;
     float BestScore = 0;
-    for (int i = 0; i < Orders.Num(); ++i) {
-        if (ServedOrders.Contains(Orders[i].OrderNumber)) {
-            continue;
-        }
-        int HouseNumber = Orders[i].HouseNumber;
-        float Distance = GetDistanceToDestination(HouseLocations[HouseNumber]);
-        float TimeLeft = GetHouseTimeLeft(HouseNumber);
-        float Score = ComputeHouseScore(Distance, TimeLeft);
+	for (int i = 0; i < Orders.Num(); ++i) {
+		if (ServedOrders.Contains(Orders[i].OrderNumber)) {
+			continue;
+		}
+		int HouseNumber = Orders[i].HouseNumber;
+		float Distance = GetDistanceToDestination(HouseLocations[HouseNumber]);
+		float TimeLeft = GetHouseTimeLeft(HouseNumber);
+		float Score = ComputeHouseScore(Distance, TimeLeft);
+		bool bFlag = true;
 
-        if (BestOrder == -1 || Score > BestScore) {
-            BestScore = Score;
-            BestOrder = i;
-        }
-    }
+		for (int id = 0; id < GetControllerCount(); ++id) {
+			if (id != ControllerId) {
+				ACleverAIController* Controller = Cast<ACleverAIController>(GetControllerById(id));
+				if (GetDistanceBetween(HouseLocations[HouseNumber], Controller->GetCurrentDestination()) < 180.f) {
+					bFlag = false;
+				}
+			}
+		}
+		
+		if (TimeLeft < 10 && Distance < 400.0f) {
+			BestOrder = i;
+		}
+
+		if ((BestOrder == -1 || Score > BestScore) && bFlag) {
+			BestScore = Score;
+			BestOrder = i;
+		}
+	}
     if (BestOrder == -1) {
         return;
     }
@@ -99,4 +118,9 @@ void ACleverAIController::Tick(float DeltaSeconds)
 int ACleverAIController::GetCurrentOrderNumber()
 {
     return CurrentOrderNumber;
+}
+
+FVector ACleverAIController::GetCurrentDestination()
+{
+	return CurrentDestination;
 }

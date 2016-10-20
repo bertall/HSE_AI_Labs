@@ -17,6 +17,7 @@ public:
     ACleverAIController();
 
     int GetCurrentOrderNumber();
+	FVector GetCurrentDestination();
 
 protected:
     virtual void Tick(float DeltaSeconds) override;
